@@ -64,7 +64,8 @@ const LeadsPage: React.FC<LeadsPageProps> = ({
         return matchesStatus && matchesSearch && matchesDate && matchesRoofFlag && matchesHomeType;
     });
     
-    const groupedLeads = useMemo(() => {
+    // FIX: Explicitly type groupedLeads to resolve type inference issues with Object.entries downstream.
+    const groupedLeads: Record<string, Lead[]> = useMemo(() => {
         if (isDealer) { // Dealers don't need grouping
             return { 'My Leads': filteredLeads };
         }

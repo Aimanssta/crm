@@ -64,9 +64,11 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ communications, leads, onSc
                     <div className="mt-1 space-y-1">
                         {dayEvents.map(event => {
                             const lead = leads.find(l => l.id === event.leadId);
+                            const title = `${event.type.toUpperCase()} with ${lead?.agentName || 'Unknown'}${event.reminderMinutes ? ` (Reminder: ${event.reminderMinutes} mins before)` : ''}`;
                             return (
-                                <div key={event.id} title={`${event.type.toUpperCase()} with ${lead?.agentName}`} className={`text-xs p-1 rounded-md truncate ${eventColors[event.type]}`}>
-                                    {event.time} - {lead?.agentName || 'Unknown'}
+                                <div key={event.id} title={title} className={`text-xs p-1 rounded-md ${eventColors[event.type]} flex items-center gap-2`}>
+                                    <span className="truncate flex-grow">{event.time} - {lead?.agentName || 'Unknown'}</span>
+                                    {event.reminderMinutes && <i className="fas fa-bell flex-shrink-0"></i>}
                                 </div>
                             );
                         })}

@@ -62,6 +62,7 @@ export interface CommunicationEvent {
   date: string; // YYYY-MM-DD
   time: string; // HH:MM
   notes?: string;
+  reminderMinutes?: number;
 }
 
 export interface Toast {

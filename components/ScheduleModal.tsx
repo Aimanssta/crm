@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Lead, CommunicationEvent, CommunicationType } from '../types';
 
@@ -15,6 +14,7 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, onSave, 
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
     const [notes, setNotes] = useState('');
+    const [reminderMinutes, setReminderMinutes] = useState<number>(0);
 
     useEffect(() => {
         if (isOpen) {
@@ -24,6 +24,7 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, onSave, 
             setDate('');
             setTime('');
             setNotes('');
+            setReminderMinutes(0);
         }
     }, [isOpen]);
 
@@ -31,7 +32,15 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, onSave, 
         e.preventDefault();
         if (!leadId || !date || !time) return;
 
-        onSave({ leadId: Number(leadId), type, date, time, notes });
+        const reminderValue = reminderMinutes > 0 ? reminderMinutes : undefined;
+        onSave({ 
+            leadId: Number(leadId), 
+            type, 
+            date, 
+            time, 
+            notes, 
+            reminderMinutes: reminderValue 
+        });
         onClose();
     };
 
@@ -59,6 +68,7 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, onSave, 
                                 <option value="call">Call</option>
                                 <option value="sms">SMS</option>
                                 <option value="voicemail">Voicemail</option>
+                                <option value="appointment">Appointment</option>
                             </select>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -70,6 +80,16 @@ const ScheduleModal: React.FC<ScheduleModalProps> = ({ isOpen, onClose, onSave, 
                                 <label className="block text-sm font-medium mb-1">Time</label>
                                 <input type="time" value={time} onChange={e => setTime(e.target.value)} required className="w-full p-2 border rounded-md" />
                             </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Reminder</label>
+                            <select value={reminderMinutes} onChange={e => setReminderMinutes(Number(e.target.value))} className="w-full p-2 border rounded-md">
+                                <option value={0}>No reminder</option>
+                                <option value={5}>5 minutes before</option>
+                                <option value={15}>15 minutes before</option>
+                                <option value={30}>30 minutes before</option>
+                                <option value={60}>1 hour before</option>
+                            </select>
                         </div>
                          <div>
                             <label className="block text-sm font-medium mb-1">Notes (Optional)</label>

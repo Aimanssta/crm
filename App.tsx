@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { Lead, TeamMember, User, Toast, CommunicationEvent, TeamType } from './types';
 import { USERS, TEAM_MEMBERS, LEADS, COMMUNICATION_EVENTS } from './constants';
@@ -74,6 +74,8 @@ const App: React.FC = () => {
   const [team, setTeam] = useState(TEAM_MEMBERS);
   const [communications, setCommunications] = useState<CommunicationEvent[]>(COMMUNICATION_EVENTS);
   const [isCalendarSynced, setIsCalendarSynced] = useState(false);
+  
+  const reminderTimeoutsRef = useRef<Record<number, number>>({});
 
 
   // --- Gemini API ---
@@ -93,6 +95,36 @@ const App: React.FC = () => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
   
+  // Effect to schedule reminders on initial app load
+    useEffect(() => {
+        const timeouts = reminderTimeoutsRef.current;
+        
+        communications.forEach(event => {
+            if (!event.reminderMinutes || timeouts[event.id]) return;
+
+            const eventDate = new Date(`${event.date}T${event.time}`);
+            if (isNaN(eventDate.getTime())) return;
+
+            const reminderTime = eventDate.getTime() - event.reminderMinutes * 60 * 1000;
+            const delay = reminderTime - Date.now();
+
+            if (delay > 0) {
+                const timeoutId = window.setTimeout(() => {
+                    const lead = leads.find(l => l.id === event.leadId);
+                    const agentName = lead ? lead.agentName : 'a lead';
+                    showToast(`Reminder: ${event.type} with ${agentName} in ${event.reminderMinutes} minutes.`, 'info');
+                    delete timeouts[event.id];
+                }, delay);
+                timeouts[event.id] = timeoutId;
+            }
+        });
+
+        // Cleanup on unmount
+        return () => {
+            Object.values(timeouts).forEach(window.clearTimeout);
+        };
+    }, []); // Empty array ensures this runs only once on mount
+
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     showToast(`Welcome back, ${user.firstName}!`, 'success');
@@ -294,6 +326,25 @@ Lead Data: ${JSON.stringify(lead, null, 2)}`;
   const handleSaveSchedule = (event: Omit<CommunicationEvent, 'id'>) => {
       const newEvent = { ...event, id: Date.now() };
       setCommunications(prev => [...prev, newEvent]);
+
+      // Schedule reminder for the newly created event
+      if (newEvent.reminderMinutes) {
+          const eventDate = new Date(`${newEvent.date}T${newEvent.time}`);
+          if (!isNaN(eventDate.getTime())) {
+              const reminderTime = eventDate.getTime() - newEvent.reminderMinutes * 60 * 1000;
+              const delay = reminderTime - Date.now();
+              if (delay > 0) {
+                  const timeoutId = window.setTimeout(() => {
+                      const lead = leads.find(l => l.id === newEvent.leadId);
+                      const agentName = lead ? lead.agentName : 'a lead';
+                      showToast(`Reminder: ${newEvent.type} with ${agentName} in ${newEvent.reminderMinutes} minutes.`, 'info');
+                      delete reminderTimeoutsRef.current[newEvent.id];
+                  }, delay);
+                  reminderTimeoutsRef.current[newEvent.id] = timeoutId;
+              }
+          }
+      }
+
       showToast(`Event scheduled for ${event.date}`, 'success');
   };
   
